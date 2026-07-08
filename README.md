@@ -29,7 +29,7 @@ It does not overwrite previous files.
 - Open VS Code, go to **Extensions**, search for **Python**, and install the **Microsoft Python** extension
 
 
-### 4. Download This Project
+### 4. Download [This Project](https://github.com/lquuu/website-monthly-publications)
 
 - Click the green `Code` button on GitHub, then choose `Download ZIP`
 - Unzip the folder and open it in VS Code
@@ -64,12 +64,12 @@ This script requires **Scopus API** access through pybliometrics. The first time
 
 - To run the script for the current year, select **Terminal → New Terminal** from the Menu Bar, then type/copy in the following (the default year will be the current year):
 ```bash
-    python website_monthly_pubs.py
+python website_monthly_pubs.py
 ```
 
 - To run it for a specific year:
 ```bash
-    python website_monthly_pubs.py 2024
+python website_monthly_pubs.py 2024
 ```
 
 ### 2. Where the Excel Files are Saved
@@ -89,5 +89,5 @@ This script requires **Scopus API** access through pybliometrics. The first time
 - Cause: The required modules are not downloaded.
 - Fix: Run the following:
 ```bash
-    `pip install -r requirements.txt`
+pip install -r requirements.txt
 ```
