@@ -2,7 +2,7 @@
 
 This script creates Excel files of BI faculty publications for a selected year using Scopus data.
 
-## What this script creates
+## What This Script Creates
 
 Each time you run the script, it creates two Excel files:
 
@@ -15,26 +15,25 @@ It does not overwrite previous files.
 
 ### 1. Install Python
 
-    Download & install Python from [python.org](https://www.python.org/downloads/).
-
-    During installation on Windows, check the box that says: `Add Python to PATH`.
+- Download & install Python from [python.org](https://www.python.org/downloads/)
+- During installation on Windows, check the box that says: `Add Python to PATH`.
 
 
 ### 2. Install VS Code
 
-    Download & install [Visual Studio Code](https://code.visualstudio.com/).
+- Download & install [Visual Studio Code](https://code.visualstudio.com/).
 
 
 ### 3. Install the Python extension in VS Code
 
-    Open VS Code, go to **Extensions**, search for **Python**, and install the **Microsoft Python** extension.
+Open VS Code, go to **Extensions**, search for **Python**, and install the **Microsoft Python** extension.
 
 
 ### 4. Download This Project
 
-    Click the green **Code** button on GitHub, then choose **Download ZIP**.
+Click the green **Code** button on GitHub, then choose **Download ZIP**.
 
-    Unzip the folder and open it in VS Code.
+Unzip the folder and open it in VS Code.
 
 
 ### 5. Open the Terminal in VS Code
