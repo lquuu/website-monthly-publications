@@ -63,12 +63,14 @@ This script requires **Scopus API** access through pybliometrics. The first time
 ### How to Run the Script
 
 - To run the script for the current year, select **Terminal → New Terminal** from the Menu Bar, then type/copy in the following (the default year will be the current year):
-
-    `python website_monthly_pubs.py`
+```bash
+    python website_monthly_pubs.py
+```
 
 - To run it for a specific year:
-
-    `python website_monthly_pubs.py 2024`
+```bash
+    python website_monthly_pubs.py 2024
+```
 
 ### 2. Where the Excel Files are Saved
 
@@ -86,4 +88,6 @@ This script requires **Scopus API** access through pybliometrics. The first time
 
 - Cause: The required modules are not downloaded.
 - Fix: Run the following:
+```bash
     `pip install -r requirements.txt`
+```
