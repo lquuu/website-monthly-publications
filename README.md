@@ -15,24 +15,24 @@ It does not overwrite previous files.
 
 ### 1. Install Python
 
-- Download & install Python from [python.org](https://www.python.org/downloads/)
-- During installation on Windows, check the box that says: `Add Python to PATH`.
+- Download & install [Python](https://www.python.org/downloads/)
+- During installation on Windows, check the box that says: `Add Python to PATH`
 
 
 ### 2. Install VS Code
 
-- Download & install [Visual Studio Code](https://code.visualstudio.com/).
+- Download & install [Visual Studio Code](https://code.visualstudio.com/)
 
 
 ### 3. Install the Python extension in VS Code
 
-- Open VS Code, go to **Extensions**, search for **Python**, and install the **Microsoft Python** extension.
+- Open VS Code, go to **Extensions**, search for **Python**, and install the **Microsoft Python** extension
 
 
 ### 4. Download This Project
 
-- Click the green **Code** button on GitHub, then choose **Download ZIP**.
-- Unzip the folder and open it in VS Code.
+- Click the green `Code` button on GitHub, then choose `Download ZIP`
+- Unzip the folder and open it in VS Code
 
 
 ### 5. Open the Terminal in VS Code
@@ -43,8 +43,7 @@ It does not overwrite previous files.
 ### 6. Install the Required Packages for this Script
 
 - Run:
-```
-bash
+```bash
 pip install -r requirements.txt
 ```
 
@@ -64,9 +63,11 @@ This script requires **Scopus API** access through pybliometrics. The first time
 ### How to Run the Script
 
 - To run the script for the current year, select **Terminal → New Terminal** from the Menu Bar, then type/copy in the following (the default year will be the current year):
+
     `python website_monthly_pubs.py`
 
 - To run it for a specific year:
+
     `python website_monthly_pubs.py 2024`
 
 ### 2. Where the Excel Files are Saved
@@ -76,12 +77,12 @@ This script requires **Scopus API** access through pybliometrics. The first time
 
 ## Common Issues
 
-### “python is not recognized”
+### `python is not recognized`
 
 - Cause: Python may not have been added to PATH.
 - Fix: Reinstall Python and make sure **Add Python to PATH** is checked.
     
-### “No module named pandas” or “No module named pybliometrics”
+### `No module named pandas` or `No module named pybliometrics`
 
 - Cause: The required modules are not downloaded.
 - Fix: Run the following:
