@@ -29,9 +29,10 @@ It does not overwrite previous files.
 - Open VS Code, go to **Extensions**, search for **Python**, and install the **Microsoft Python** extension
 
 
-### 4. Download [This Project](https://github.com/lquuu/website-monthly-publications)
+### 4. Download This Project
 
-- Click the green `Code` button on GitHub, then choose `Download ZIP`
+- Scroll up to the top of the repository page on Github
+- Click the green `<> Code` button, then choose `Download ZIP` from the dropdown
 - Unzip the folder and open it in VS Code
 
 
