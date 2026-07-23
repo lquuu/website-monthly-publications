@@ -315,6 +315,14 @@ BI_FACULTY_ROSTER = [
         "clusters": ['Cell and Tissue Engineering'],
     },
     {
+        "first": 'Jae-Won',
+        "middle": '',
+        "last": 'Shin',
+        "contributor": 'Shin, J.',
+        "scopus_ids": [48061385600, 57205414505],
+        "clusters": ['Nanotechnology', 'Cell and Tissue Engineering', 'Single Cell Technologies', 'Advanced Materials and Drug Delivery'],
+        },
+    {
         "first": 'Michael',
         "middle": 'J.',
         "last": 'Solomon',
