@@ -141,7 +141,7 @@ Each BI faculty is assigned to at least one BI cluster. These clusters are often
 
 As you may have already read, this script default to the current year. If you would like to run it for a past year, simply type `python website_monthly_pubs.py [insert your year here]`. For example:
 
-```python
+```bash
 python website_monthly_pubs.py 2001
 ```
 
