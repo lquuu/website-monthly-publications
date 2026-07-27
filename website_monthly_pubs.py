@@ -38,16 +38,13 @@
 #   as returned directly by ScopusSearch (author_names / author_ids fields),
 #   filtered down to whichever of your bi_faculty IDs appear on that paper, in
 #   the paper's own author order.
-# - Surnames are normalized (case, spaces, hyphens stripped) before matching against
-#   the cluster roster below, so "VanEpps"/"Vanepps"/"Van Epps" etc. all match.
-# - "Nagrath" and "Schwendeman" are disambiguated by first initial (two people each).
-# - Any surname encountered that ISN'T in the roster gets flagged in the printed
-#   output at the end, rather than silently left blank -- check that list and let
-#   me know the missing clusters.
+# - Faculty names, cluster memberships, and all known primary/secondary Scopus IDs
+#   are maintained together in BI_FACULTY_ROSTER below.
+# - Publications are matched to faculty directly by Scopus ID, so duplicate surnames,
+#   punctuation, initials, and alternate Scopus profiles do not require special cases.
 # - Publications with no DOI are skipped (can't build a Link), same as the original
 #   collection script's behavior.
 
-import re
 import sys
 import calendar
 from datetime import date, datetime
@@ -67,104 +64,355 @@ print(f"Building monthly pub tracker for {TARGET_YEAR}...")
 OUT_MAIN = f"website_monthly_pubs_{TARGET_YEAR}_{RUN_TIMESTAMP}.xlsx"
 OUT_TEMPLATE = f"website_monthly_pubs_import_template_{TARGET_YEAR}_{RUN_TIMESTAMP}.xlsx"
 
-bi_faculty = [
-    55016188700, 24068798200, 12779584500, 57195268661, 26021803700,
-    7004361447, 15033338100, 55465936200, 8072516000, 57201972955,
-    7202812560, 9536007500, 57203325389, 22135180200, 6603555265,
-    7402161971, 16042824100, 57200610670, 36930755200, 57189033142,
-    15035854800, 7006008866, 55975937900, 35726004100, 8577389100,
-    23101128900, 57189212345, 55885015000, 35243347700, 6506939515,
-    57222518153, 7003309460, 7005328686, 35307875200, 7005915503,
-    7101689432, 6701644278, 6603587887, 57211284617, 57222515420,
-    7006322846, 7006067517, 57203044772, 55859799800,
+# ---- BI faculty roster ----------------------------------------------------
+# ============================================================================
+# BI FACULTY ROSTER
+#
+# This is the only section that should need updating when faculty join or leave.
+# Each faculty record contains separate first, middle, and last name fields, the
+# contributor format used in the spreadsheet, every known Scopus Author ID, and
+# BI cluster memberships. Include ALL IDs when Scopus has duplicate profiles.
+# ============================================================================
+BI_FACULTY_ROSTER = [
+    {
+        "first": 'Carlos',
+        "middle": 'A.',
+        "last": 'Aguilar',
+        "contributor": 'Aguilar, C. A.',
+        "scopus_ids": [55016188700],
+        "clusters": ['Cell and Tissue Engineering', 'Single Cell Technologies'],
+    },
+    {
+        "first": 'Timothy',
+        "middle": 'M.',
+        "last": 'Bruns',
+        "contributor": 'Bruns, T. M.',
+        "scopus_ids": [24068798200],
+        "clusters": ['Neural Engineering'],
+    },
+    {
+        "first": 'Cynthia',
+        "middle": 'A.',
+        "last": 'Chestek',
+        "contributor": 'Chestek, C. A.',
+        "scopus_ids": [12779584500],
+        "clusters": ['Neural Engineering'],
+    },
+    {
+        "first": 'Tae-Hwa',
+        "middle": '',
+        "last": 'Chun',
+        "contributor": 'Chun, T. H.',
+        "scopus_ids": [57195268661],
+        "clusters": ['Cell and Tissue Engineering'],
+    },
+    {
+        "first": 'Lola',
+        "middle": '',
+        "last": 'Eniola-Adefeso',
+        "contributor": 'Eniola-Adefeso, L.',
+        "scopus_ids": [26021803700],
+        "clusters": ['Cell and Tissue Engineering'],
+    },
+    {
+        "first": 'Eva',
+        "middle": 'L.',
+        "last": 'Feldman',
+        "contributor": 'Feldman, E. L.',
+        "scopus_ids": [7201917779],
+        "clusters": [],
+    },
+    {
+        "first": 'Sharon',
+        "middle": 'C.',
+        "last": 'Glotzer',
+        "contributor": 'Glotzer, S. C.',
+        "scopus_ids": [7004361447],
+        "clusters": ['Nanotechnology'],
+    },
+    {
+        "first": 'Colin',
+        "middle": 'F.',
+        "last": 'Greineder',
+        "contributor": 'Greineder, C. F.',
+        "scopus_ids": [15033338100],
+        "clusters": ['Nanotechnology'],
+    },
+    {
+        "first": 'Toshiro',
+        "middle": '',
+        "last": 'Hara',
+        "contributor": 'Hara, T.',
+        "scopus_ids": [55465936200],
+        "clusters": ['BioInnovations in Brain Cancer'],
+    },
+    {
+        "first": 'Jan',
+        "middle": '',
+        "last": 'Hu',
+        "contributor": 'Hu, J.',
+        "scopus_ids": [8072516000, 57201972955],
+        "clusters": ['Cell and Tissue Engineering'],
+    },
+    {
+        "first": 'Evan',
+        "middle": 'T.',
+        "last": 'Keller',
+        "contributor": 'Keller, E. T.',
+        "scopus_ids": [7202812560],
+        "clusters": ['Cell and Tissue Engineering', 'Single Cell Technologies'],
+    },
+    {
+        "first": 'Jinsang',
+        "middle": '',
+        "last": 'Kim',
+        "contributor": 'Kim, J.',
+        "scopus_ids": [9536007500, 57203325389],
+        "clusters": ['Advanced Materials and Drug Delivery'],
+    },
+    {
+        "first": 'Nicholas',
+        "middle": '',
+        "last": 'Kotov',
+        "contributor": 'Kotov, N.',
+        "scopus_ids": [22135180200],
+        "clusters": ['Nanotechnology', 'Single Cell Technologies'],
+    },
+    {
+        "first": 'Joerg',
+        "middle": '',
+        "last": 'Lahann',
+        "contributor": 'Lahann, J.',
+        "scopus_ids": [6603555265],
+        "clusters": ['Advanced Materials and Drug Delivery', 'BioInnovations in Brain Cancer', 'Single Cell Technologies'],
+    },
+    {
+        "first": 'Ronald',
+        "middle": 'G.',
+        "last": 'Larson',
+        "contributor": 'Larson, R. G.',
+        "scopus_ids": [7402161971],
+        "clusters": ['Nanotechnology'],
+    },
+    {
+        "first": 'Scott',
+        "middle": 'F.',
+        "last": 'Lempka',
+        "contributor": 'Lempka, S. F.',
+        "scopus_ids": [16042824100, 57200610670],
+        "clusters": ['Neural Engineering'],
+    },
+    {
+        "first": 'Sasha Cai',
+        "middle": '',
+        "last": 'Lesher-Pérez',
+        "contributor": 'Lesher-Pérez, S. C.',
+        "scopus_ids": [36930755200],
+        "clusters": ['Cell and Tissue Engineering', 'Single Cell Technologies'],
+    },
+    {
+        "first": 'Albert',
+        "middle": '',
+        "last": 'Liu',
+        "contributor": 'Liu, A.',
+        "scopus_ids": [57189033142],
+        "clusters": ['Advanced Materials and Drug Delivery', 'Nanotechnology', 'Cell and Tissue Engineering'],
+    },
+    {
+        "first": 'Isabelle',
+        "middle": 'M. A.',
+        "last": 'Lombaert',
+        "contributor": 'Lombaert, I. M. A.',
+        "scopus_ids": [15035854800],
+        "clusters": ['Cell and Tissue Engineering'],
+    },
+    {
+        "first": 'Kathryn',
+        "middle": '',
+        "last": 'Luker',
+        "contributor": 'Luker, K.',
+        "scopus_ids": [7006008866],
+        "clusters": ['Cell and Tissue Engineering', 'Single Cell Technologies'],
+    },
+    {
+        "first": 'Jouha',
+        "middle": '',
+        "last": 'Min',
+        "contributor": 'Min, J.',
+        "scopus_ids": [55975937900],
+        "clusters": ['Cell and Tissue Engineering', 'BioInnovations in Brain Cancer', 'Advanced Materials and Drug Delivery', 'Nanotechnology'],
+    },
+    {
+        "first": 'James',
+        "middle": 'J.',
+        "last": 'Moon',
+        "contributor": 'Moon, J. J.',
+        "scopus_ids": [35726004100],
+        "clusters": ['BioInnovations in Brain Cancer', 'Advanced Materials and Drug Delivery'],
+    },
+    {
+        "first": 'Deepak',
+        "middle": '',
+        "last": 'Nagrath',
+        "contributor": 'Nagrath, D.',
+        "scopus_ids": [8577389100],
+        "clusters": ['BioInnovations in Brain Cancer', 'Cell and Tissue Engineering', 'Single Cell Technologies'],
+    },
+    {
+        "first": 'Sunitha',
+        "middle": '',
+        "last": 'Nagrath',
+        "contributor": 'Nagrath, S.',
+        "scopus_ids": [23101128900],
+        "clusters": ['Cell and Tissue Engineering', 'Single Cell Technologies'],
+    },
+    {
+        "first": 'Enrico',
+        "middle": '',
+        "last": 'Opri',
+        "contributor": 'Opri, E.',
+        "scopus_ids": [57189212345],
+        "clusters": ['Neural Engineering'],
+    },
+    {
+        "first": 'Abdon',
+        "middle": '',
+        "last": 'Pena-Francesch',
+        "contributor": 'Pena-Francesch, A.',
+        "scopus_ids": [55885015000],
+        "clusters": ['Advanced Materials and Drug Delivery', 'Nanotechnology'],
+    },
+    {
+        "first": 'Anthony',
+        "middle": '',
+        "last": 'Rosenzweig',
+        "contributor": 'Rosenzweig, A.',
+        "scopus_ids": [35243347700],
+        "clusters": ['Cell and Tissue Engineering', 'Single Cell Technologies'],
+    },
+    {
+        "first": 'Anna',
+        "middle": 'A.',
+        "last": 'Schwendeman',
+        "contributor": 'Schwendeman, A. A.',
+        "scopus_ids": [6506939515, 57222518153],
+        "clusters": ['Nanotechnology', 'BioInnovations in Brain Cancer'],
+    },
+    {
+        "first": 'Steven',
+        "middle": 'P.',
+        "last": 'Schwendeman',
+        "contributor": 'Schwendeman, S. P.',
+        "scopus_ids": [7003309460],
+        "clusters": ['BioInnovations in Brain Cancer', 'Advanced Materials and Drug Delivery'],
+    },
+    {
+        "first": 'Lonnie',
+        "middle": 'D.',
+        "last": 'Shea',
+        "contributor": 'Shea, L. D.',
+        "scopus_ids": [7005328686],
+        "clusters": ['Cell and Tissue Engineering'],
+    },
+    {
+        "first": 'Jae-Won',
+        "middle": '',
+        "last": 'Shin',
+        "contributor": 'Shin, J.',
+        "scopus_ids": [48061385600, 57205414505],
+        "clusters": ['Nanotechnology', 'Cell and Tissue Engineering', 'Single Cell Technologies', 'Advanced Materials and Drug Delivery'],
+        },
+    {
+        "first": 'Michael',
+        "middle": 'J.',
+        "last": 'Solomon',
+        "contributor": 'Solomon, M. J.',
+        "scopus_ids": [35307875200],
+        "clusters": ['Nanotechnology'],
+    },
+    {
+        "first": 'William',
+        "middle": 'C.',
+        "last": 'Stacey',
+        "contributor": 'Stacey, W. C.',
+        "scopus_ids": [7005915503],
+        "clusters": ['Neural Engineering'],
+    },
+    {
+        "first": 'Peter',
+        "middle": 'M.',
+        "last": 'Tessier',
+        "contributor": 'Tessier, P. M.',
+        "scopus_ids": [7101689432],
+        "clusters": ['BioInnovations in Brain Cancer', 'Advanced Materials and Drug Delivery', 'Nanotechnology'],
+    },
+    {
+        "first": 'Thomas',
+        "middle": '',
+        "last": 'Truskett',
+        "contributor": 'Truskett, T.',
+        "scopus_ids": [6701644278],
+        "clusters": ['Advanced Materials and Drug Delivery', 'Nanotechnology'],
+    },
+    {
+        "first": 'Anish',
+        "middle": '',
+        "last": 'Tuteja',
+        "contributor": 'Tuteja, A.',
+        "scopus_ids": [6603587887],
+        "clusters": ['Advanced Materials and Drug Delivery'],
+    },
+    {
+        "first": 'J. Scott',
+        "middle": 'S.',
+        "last": 'VanEpps',
+        "contributor": 'VanEpps, J. S.',
+        "scopus_ids": [57211284617, 57222515420],
+        "clusters": ['Nanotechnology'],
+    },
+    {
+        "first": 'James',
+        "middle": 'D.',
+        "last": 'Weiland',
+        "contributor": 'Weiland, J. D.',
+        "scopus_ids": [7006322846],
+        "clusters": ['Neural Engineering'],
+    },
+    {
+        "first": 'Max',
+        "middle": 'S.',
+        "last": 'Wicha',
+        "contributor": 'Wicha, M. S.',
+        "scopus_ids": [7006067517, 57203044772, 57121076000],
+        "clusters": ['Cell and Tissue Engineering', 'Single Cell Technologies'],
+    },
+    {
+        "first": 'Matthew',
+        "middle": '',
+        "last": 'Willsey',
+        "contributor": 'Willsey, M.',
+        "scopus_ids": [55859799800],
+        "clusters": ['Neural Engineering'],
+    },
+    {
+        "first": 'Guizhi',
+        "middle": '',
+        "last": 'Zhu',
+        "contributor": 'Zhu, G.',
+        "scopus_ids": [8063118400, 57221993226],
+        "clusters": ['BioInnovations in Brain Cancer'],
+    },
 ]
+
+# Flatten the readable roster into the structures used by the query and lookup.
+# Every Scopus ID points back to the same faculty record, including secondary IDs.
+FACULTY_BY_SCOPUS_ID = {
+    scopus_id: faculty
+    for faculty in BI_FACULTY_ROSTER
+    for scopus_id in faculty["scopus_ids"]
+}
+bi_faculty = list(FACULTY_BY_SCOPUS_ID)
 bi_faculty_set = set(bi_faculty)
-
-# ---- Cluster roster -------------------------------------------------------
-# Keys are normalized surnames (lowercase, spaces/hyphens stripped).
-CLUSTER_ROSTER = {
-    "aguilar": ["Cell and Tissue Engineering", "Single Cell Technologies"],
-    "bruns": ["Neural Engineering"],
-    "chestek": ["Neural Engineering"],
-    "chun": ["Cell and Tissue Engineering"],
-    "glotzer": ["Nanotechnology"],
-    "greineder": ["Nanotechnology"],
-    "hara": ["BioInnovations in Brain Cancer"],
-    "hu": ["Cell and Tissue Engineering"],
-    "keller": ["Cell and Tissue Engineering", "Single Cell Technologies"],
-    "kim": ["Advanced Materials and Drug Delivery"],
-    "kotov": ["Nanotechnology", "Single Cell Technologies"],
-    "lahann": ["Advanced Materials and Drug Delivery", "BioInnovations in Brain Cancer", "Single Cell Technologies"],
-    "larson": ["Nanotechnology"],
-    "lempka": ["Neural Engineering"],
-    "lesherperez": ["Cell and Tissue Engineering"],
-    "liu": ["Advanced Materials and Drug Delivery", "Nanotechnology", "Cell and Tissue Engineering"],
-    "lombaert": ["Cell and Tissue Engineering"],
-    "luker": ["Cell and Tissue Engineering", "Single Cell Technologies"],
-    "min": ["Cell and Tissue Engineering", "BioInnovations in Brain Cancer", "Advanced Materials and Drug Delivery", "Nanotechnology"],
-    "moon": ["BioInnovations in Brain Cancer", "Advanced Materials and Drug Delivery"],
-    "opri": ["Neural Engineering"],
-    "penafrancesch": ["Nanotechnology"],
-    "rosenzweig": ["Cell and Tissue Engineering", "Single Cell Technologies"],
-    "shea": ["Cell and Tissue Engineering"],
-    "shin": ["Advanced Materials and Drug Delivery", "Cell and Tissue Engineering", "Single Cell Technologies", "Nanotechnology"],
-    "solomon": ["Nanotechnology"],
-    "stacey": ["Neural Engineering"],
-    "tessier": ["BioInnovations in Brain Cancer", "Advanced Materials and Drug Delivery", "Nanotechnology"],
-    "truskett": ["Advanced Materials and Drug Delivery", "Nanotechnology"],
-    "tuteja": ["Advanced Materials and Drug Delivery"],
-    "vanepps": ["Nanotechnology"],
-    "weiland": ["Neural Engineering"],
-    "wicha": ["Cell and Tissue Engineering", "Single Cell Technologies"],
-    "willsey": ["Neural Engineering"],
-    "eniolaadefeso": [],  # TODO: Luciana to provide cluster(s)
-}
-
-# Ambiguous surnames -- two BI faculty share these, disambiguated by first initial.
-CLUSTER_ROSTER_BY_INITIAL = {
-    ("nagrath", "d"): ["BioInnovations in Brain Cancer", "Cell and Tissue Engineering", "Single Cell Technologies"],
-    ("nagrath", "s"): ["Cell and Tissue Engineering", "Single Cell Technologies"],
-    ("schwendeman", "a"): ["Nanotechnology", "BioInnovations in Brain Cancer"],
-    ("schwendeman", "s"): ["BioInnovations in Brain Cancer", "Advanced Materials and Drug Delivery"],
-}
-AMBIGUOUS_SURNAMES = {"nagrath", "schwendeman"}
-
-
-def normalize_surname(surname):
-    return re.sub(r"[^a-z]", "", (surname or "").lower())
-
-
-def get_clusters(surname, initials_or_given_name):
-    s = normalize_surname(surname)
-    if s in AMBIGUOUS_SURNAMES:
-        initial = (initials_or_given_name or "").strip()[:1].lower()
-        return CLUSTER_ROSTER_BY_INITIAL.get((s, initial))
-    return CLUSTER_ROSTER.get(s)
-
-
-def parse_author_name(name_str):
-    """ScopusSearch's author_names entries come as 'Surname, Initials', e.g.
-    'Kotov, N.A.'. Split into (surname, initials)."""
-    if not name_str:
-        return "", ""
-    if "," in name_str:
-        surname, initials = name_str.split(",", 1)
-    else:
-        surname, initials = name_str, ""
-    return surname.strip(), initials.strip()
-
-
-def format_contributor(surname, given_or_initials):
-    """Handles both already-abbreviated initials ('N.A.') and full given names
-    ('PETER M.', 'Omolola') -- takes the first letter of each letter-run either way."""
-    given_or_initials = (given_or_initials or "").strip()
-    if not given_or_initials:
-        return surname
-    tokens = re.findall(r"[A-Za-z]+", given_or_initials)
-    if not tokens:
-        return surname
-    formatted_initials = ". ".join(t[0].upper() for t in tokens) + "."
-    return f"{surname}, {formatted_initials}"
 
 
 # ---- Query Scopus directly, scoped to just this year -----------------------
@@ -189,7 +437,6 @@ print(f"Found {len(docs_by_eid)} unique BI-faculty publication(s) for {TARGET_YE
 
 # ---- Build records -----------------------------------------------------
 records = []
-missing_surnames = set()
 skipped_no_doi = 0
 skipped_no_date = 0
 
@@ -212,17 +459,18 @@ for eid, doc in docs_by_eid.items():
     clusters = []
     for name_str, id_str in zip(names, ids):
         id_str = (id_str or "").strip()
-        if not id_str.isdigit() or int(id_str) not in bi_faculty_set:
+        if not id_str.isdigit():
             continue
-        surname, initials = parse_author_name(name_str)
-        contributor_strs.append(format_contributor(surname, initials))
-        c = get_clusters(surname, initials)
-        if c is None:
-            missing_surnames.add(surname)
-        elif c:
-            for cl in c:
-                if cl not in clusters:
-                    clusters.append(cl)
+        faculty = FACULTY_BY_SCOPUS_ID.get(int(id_str))
+        if faculty is None:
+            continue
+
+        # Use the canonical roster name so alternate Scopus profiles and byline
+        # variations still produce one consistent contributor name.
+        contributor_strs.append(faculty["contributor"])
+        for cl in faculty["clusters"]:
+            if cl not in clusters:
+                clusters.append(cl)
 
     if not contributor_strs:
         # Shouldn't normally happen (the search itself was scoped to bi_faculty IDs),
@@ -245,12 +493,6 @@ if skipped_no_doi:
     print(f"Skipped {skipped_no_doi} publication(s) with no DOI.")
 if skipped_no_date:
     print(f"Skipped {skipped_no_date} publication(s) with no coverDate.")
-
-if missing_surnames:
-    print("\nNOTE: these surnames weren't found in the cluster roster -- "
-          "Clusters left blank for them. Let me know their clusters:")
-    for s in sorted(missing_surnames):
-        print(f"  - {s}")
 
 if not records:
     raise SystemExit(f"No usable BI-faculty publications found for {TARGET_YEAR}.")
